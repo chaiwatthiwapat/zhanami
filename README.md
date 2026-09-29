@@ -1,0 +1,31 @@
+# Zhanami
+
+React + TypeScript desktop preview based on `desktop_01.html` and `wall_01.webp`.
+
+## Setup
+
+Requires Node.js 22.12+ and npm. Chrome or Chromium is optional for a dedicated preview window.
+
+```bash
+cd /home/znnn/my_code/zhanami
+make setup
+```
+
+## Run
+
+```bash
+make preview   # start the local preview and open its window when available
+make status    # show preview process status
+make stop      # close the dedicated window and stop the local server
+```
+
+The preview URL is `http://127.0.0.1:5173/`. If no graphical display or supported browser is available, `make preview` starts the server and prints the URL. Set `ZHANAMI_PORT` to use another port.
+
+## Build
+
+```bash
+make build
+make lint
+```
+
+Architecture and theme notes are in [`docs/`](docs/architecture.md).
