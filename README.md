@@ -4,7 +4,7 @@ React + TypeScript desktop preview based on `desktop_01.html` and `wall_01.webp`
 
 ## Setup
 
-Requires Node.js 22.12+ and npm. Chrome or Chromium is optional for a dedicated preview window.
+Requires Node.js 22.12+ and npm. Chrome or Chromium is optional for a dedicated preview window. Live media controls use the local D-Bus session through `/usr/bin/python3` with PyGObject (`python3-gi` on Ubuntu); without it, the original music card remains as a visual placeholder.
 
 ```bash
 cd /home/znnn/my_code/zhanami

@@ -8,7 +8,7 @@ Sakura is the default theme. Moonlight is a second token set that demonstrates h
 2. Add a `:root[data-theme='name']` block to `src/themes.css` with `--w`, `--card`, `--dark`, `--ln`, `--pk`, `--pk2`, and `--dim`.
 3. Add the theme name to the state and selection logic in `src/App.tsx`.
 
-The `--w` token is a CSS `url(...)`. It is used both for the page wallpaper and for the cropped music cover, matching the original HTML. The default wallpaper is `public/assets/wallpapers/wall_01.webp`, copied from `/home/znnn/Pictures/design/wall_01.webp`.
+The `--w` token is a CSS `url(...)`. It is used for the page wallpaper and as the fallback cropped music cover, matching the original HTML when live cover art is unavailable. The default wallpaper is `public/assets/wallpapers/wall_01.webp`, copied from `/home/znnn/Pictures/design/wall_01.webp`.
 
 Keep wallpaper filenames descriptive and add future images to the same directory. Avoid embedding large Base64 image data in CSS or TSX so assets remain replaceable and cacheable.
 

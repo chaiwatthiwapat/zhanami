@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, MouseEvent } from 'react'
 import { ToolbarIcon } from './Shell'
 import type { SystemMetrics } from '../types/system'
+import type { MediaAction, MediaSnapshot } from '../types/media'
 
 const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
@@ -25,42 +26,91 @@ export function ClockWeather({ now }: { now: Date }) {
   )
 }
 
-const TRACK_LENGTH = 252
-
 function formatTime(seconds: number) {
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
+  const total = Math.max(0, Math.floor(seconds))
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
 }
 
 export function Music({ onNotify }: { onNotify: (message: string) => void }) {
-  const [seconds, setSeconds] = useState(87)
-  const [playing, setPlaying] = useState(true)
+  const [media, setMedia] = useState<(MediaSnapshot & { receivedAt: number }) | null>(null)
+  const [now, setNow] = useState(0)
 
   useEffect(() => {
-    if (!playing) return
-    const timer = window.setInterval(() => setSeconds((value) => (value + 1) % TRACK_LENGTH), 1000)
-    return () => window.clearInterval(timer)
-  }, [playing])
+    let active = true
+    let pending = false
+
+    async function refresh() {
+      if (pending) return
+      pending = true
+      try {
+        const response = await fetch('/api/media', { cache: 'no-store' })
+        if (!response.ok) throw new Error(`HTTP ${response.status}`)
+        const snapshot = await response.json() as MediaSnapshot | null
+        if (active) setMedia(snapshot ? { ...snapshot, receivedAt: Date.now() } : null)
+      } catch {
+        if (active) setMedia(null)
+      } finally {
+        pending = false
+      }
+    }
+
+    void refresh()
+    const statusTimer = window.setInterval(() => { void refresh() }, 2000)
+    const clockTimer = window.setInterval(() => setNow(Date.now()), 250)
+    return () => { active = false; window.clearInterval(statusTimer); window.clearInterval(clockTimer) }
+  }, [])
+
+  async function command(action: MediaAction, seconds?: number) {
+    if (!media) return
+    try {
+      const response = await fetch('/api/media/control', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId: media.playerId, action, seconds }),
+      })
+      if (!response.ok) {
+        if (response.status !== 409) onNotify('Media control unavailable')
+        return
+      }
+      const latest = await fetch('/api/media', { cache: 'no-store' })
+      if (latest.ok) {
+        const snapshot = await latest.json() as MediaSnapshot | null
+        setMedia(snapshot ? { ...snapshot, receivedAt: Date.now() } : null)
+      }
+    } catch {
+      onNotify('Media control unavailable')
+    }
+  }
+
+  const playing = media ? media.playbackStatus === 'Playing' : true
+  const length = media?.lengthSeconds ?? 252
+  const seconds = media
+    ? Math.min(length, media.positionSeconds + (playing ? Math.max(0, now - media.receivedAt) / 1000 * media.rate : 0))
+    : 87
 
   function seek(event: MouseEvent<HTMLButtonElement>) {
+    if (!media?.canSeek || !media.lengthSeconds) return
     const rect = event.currentTarget.getBoundingClientRect()
-    setSeconds(Math.min(TRACK_LENGTH, Math.max(0, Math.round(((event.clientX - rect.left) / rect.width) * TRACK_LENGTH))))
+    const target = Math.min(media.lengthSeconds, Math.max(0, ((event.clientX - rect.left) / rect.width) * media.lengthSeconds))
+    void command('seek', target)
   }
 
   return (
-    <section id="music" className="g" aria-label="Music preview">
-      <div className="cov" aria-hidden="true" /><h3>Sakura</h3><p>Hoshimachi Suisei</p>
+    <section id="music" className="g" aria-label="Music player">
+      <div className="cov" aria-hidden="true">{media?.artUrl && <img key={media.artUrl} src={media.artUrl} alt="" onError={(event) => { event.currentTarget.hidden = true }} />}</div>
+      <h3 title={media?.title}>{media?.title || 'Sakura'}</h3><p title={media?.artist}>{media ? (media.artist || media.playerName) : 'Hoshimachi Suisei'}</p>
       <svg className="hr" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 17S2 12 2 7a4 4 0 018-1 4 4 0 018 1c0 5-8 10-8 10z" /></svg>
-      <button type="button" className="pb" aria-label="Seek track" onClick={seek}><i style={{ width: `${seconds / TRACK_LENGTH * 100}%` }} /></button>
-      <div className="tm"><span>{formatTime(seconds)}</span><span>4:12</span></div>
+      <button type="button" className="pb" aria-label="Seek track" aria-disabled={!media?.canSeek} onClick={seek}><i style={{ width: `${Math.min(100, seconds / length * 100)}%` }} /></button>
+      <div className="tm"><span>{formatTime(seconds)}</span><span>{media && media.lengthSeconds == null ? '--:--' : formatTime(length)}</span></div>
       <div className="ctl">
-        <button type="button" aria-label="Shuffle preview" onClick={() => onNotify('Shuffle preview')}><svg className="tb" viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h3l8 8h4M2 14h3l2-2M13 6h4M15 4l2 2-2 2M15 12l2 2-2 2" /></svg></button>
-        <button type="button" aria-label="Previous track preview" onClick={() => { setSeconds(0); onNotify('Previous track preview') }}><svg className="tb" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 4v12M16 4v12L7 10z" fill="white" /></svg></button>
-        <button type="button" className="play" aria-label={playing ? 'Pause preview' : 'Play preview'} onClick={() => setPlaying(!playing)}>
+        <button type="button" aria-label="Shuffle (visual only)"><svg className="tb" viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h3l8 8h4M2 14h3l2-2M13 6h4M15 4l2 2-2 2M15 12l2 2-2 2" /></svg></button>
+        <button type="button" aria-label="Previous track" aria-disabled={!media?.canGoPrevious} onClick={() => { if (media?.canGoPrevious) void command('previous') }}><svg className="tb" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 4v12M16 4v12L7 10z" fill="white" /></svg></button>
+        <button type="button" className="play" aria-label={playing ? 'Pause' : 'Play'} aria-disabled={!media?.canPlayPause} onClick={() => { if (media?.canPlayPause) void command('playPause') }}>
           {playing ? <svg className="tb" viewBox="0 0 20 20" aria-hidden="true"><rect x="5" y="4" width="3.5" height="12" rx="1" /><rect x="11.5" y="4" width="3.5" height="12" rx="1" /></svg>
             : <svg className="tb" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 3.5v13l11-6.5z" /></svg>}
         </button>
-        <button type="button" aria-label="Next track preview" onClick={() => { setSeconds(0); onNotify('Next track preview') }}><svg className="tb" viewBox="0 0 20 20" aria-hidden="true"><path d="M15 4v12M4 4v12l9-6z" fill="white" /></svg></button>
-        <button type="button" aria-label="Repeat preview" onClick={() => onNotify('Repeat preview')}><svg className="tb" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 9V7a2 2 0 012-2h9l-2-2M16 11v2a2 2 0 01-2 2H5l2 2" /></svg></button>
+        <button type="button" aria-label="Next track" aria-disabled={!media?.canGoNext} onClick={() => { if (media?.canGoNext) void command('next') }}><svg className="tb" viewBox="0 0 20 20" aria-hidden="true"><path d="M15 4v12M4 4v12l9-6z" fill="white" /></svg></button>
+        <button type="button" aria-label="Repeat (visual only)"><svg className="tb" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 9V7a2 2 0 012-2h9l-2-2M16 11v2a2 2 0 01-2 2H5l2 2" /></svg></button>
       </div>
     </section>
   )
