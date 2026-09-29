@@ -3,10 +3,10 @@
 setup:
 	npm install
 
-preview:
+run:
 	./scripts/preview.sh start
 
-stop:
+down:
 	./scripts/preview.sh stop
 
 status:
