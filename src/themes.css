@@ -32,6 +32,10 @@
 #tl .todo-editor button { flex: none; width: 22px; height: 28px; font-size: 18px; }
 #tl .todo-empty { height: auto; padding: 14px 0; color: var(--dim); font-size: 13px; }
 #todo .todo-save-error { position: absolute; left: 22px; right: 22px; bottom: 3px; color: #ffe0e8; font-size: 11px; }
+#cal .cg { bottom: 16px; grid-template-rows: 22px repeat(var(--calendar-weeks), minmax(0, 1fr)); row-gap: 0; align-items: center; }
+#cal .cg .h { padding-bottom: 0; }
+#cal .cg .d { display: block; width: 30px; height: 30px; line-height: 30px; }
+#cal .cg .o .t { color: #fff; }
 .pb { appearance: none; width: auto; }
 .app-icon { object-fit: contain; }
 #music .hr { width: 22px; height: 22px; fill: var(--pk); }

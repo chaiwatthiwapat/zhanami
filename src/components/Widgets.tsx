@@ -293,26 +293,30 @@ export function Calendar({ now }: { now: Date }) {
   const month = view.getMonth()
   const firstDay = new Date(year, month, 1).getDay()
   const days = new Date(year, month + 1, 0).getDate()
+  const weeks = Math.ceil((firstDay + days) / 7)
 
   function move(delta: number) {
     setView((current) => new Date(current.getFullYear(), current.getMonth() + delta, 1))
   }
 
   return (
-    <section id="cal" className="g" aria-label="Calendar preview">
+    <section id="cal" className="g" aria-label="Calendar">
       <h2>{months[month]} {year}</h2>
       <div className="nv">
         <button type="button" aria-label="Previous month" onClick={() => move(-1)}><ToolbarIcon name="left" /></button>
         <button type="button" aria-label="Next month" onClick={() => move(1)}><ToolbarIcon name="right" /></button>
       </div>
-      <div className="cg">
+      <div className="cg" style={{ '--calendar-weeks': weeks } as CSSProperties}>
         {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => <div className="h" key={day}>{day}</div>)}
         {Array.from({ length: firstDay }, (_, index) => <div key={`blank-${index}`} />)}
         {Array.from({ length: days }, (_, index) => {
           const day = index + 1
           const today = day === now.getDate() && month === now.getMonth() && year === now.getFullYear()
+          const fullDate = `${months[month]} ${day}, ${year}`
+          const dateTime = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
           return <div key={day} className={new Date(year, month, day).getDay() === 0 ? 'o' : ''}>
-            <div className={`d${today ? ' t' : ''}`}>{day}</div>
+            <time className={`d${today ? ' t' : ''}`} dateTime={dateTime} aria-label={fullDate}
+              aria-current={today ? 'date' : undefined} title={fullDate}>{day}</time>
           </div>
         })}
       </div>
