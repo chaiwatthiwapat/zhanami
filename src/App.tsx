@@ -7,6 +7,15 @@ import './themes.css'
 
 const STAGE_WIDTH = 1600
 const STAGE_HEIGHT = 900
+const launchableApps: Record<string, string> = {
+  Files: 'files',
+  zter: 'zter',
+  Chrome: 'chrome',
+  'VS Code': 'vscode',
+  Discord: 'discord',
+  Spotify: 'spotify',
+  Photos: 'photos',
+}
 
 function useClock() {
   const [now, setNow] = useState(() => new Date())
@@ -66,11 +75,23 @@ export default function App() {
     setMessage(text)
   }
 
-  function selectApp(name: string) {
+  async function selectApp(name: string) {
     if (name === 'Settings') {
       const next = theme === 'sakura' ? 'moonlight' : 'sakura'
       setTheme(next)
       notify(`${next === 'sakura' ? 'Sakura' : 'Moonlight'} theme`)
+    } else if (launchableApps[name]) {
+      try {
+        const response = await fetch('/api/apps/launch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ app: launchableApps[name] }),
+        })
+        if (!response.ok) throw new Error(`HTTP ${response.status}`)
+        notify(`Opening ${name}`)
+      } catch {
+        notify(`Could not open ${name}`)
+      }
     } else {
       notify(`${name} preview`)
     }

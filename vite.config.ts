@@ -2,6 +2,7 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { getSystemMetrics } from './server/systemMetrics.ts'
 import { controlMedia, getMedia } from './server/mpris.ts'
+import { isLaunchableApp, launchApp } from './server/appLauncher.ts'
 import type { MediaAction } from './src/types/media.ts'
 
 const mediaActions = new Set<MediaAction>(['playPause', 'previous', 'next', 'seek'])
@@ -91,6 +92,46 @@ export default defineConfig({
           } catch (error) {
             console.error('Media status unavailable:', error)
             sendJson(response, 503, { error: 'Media status unavailable' })
+          }
+        })
+      },
+    },
+    {
+      name: 'local-app-launcher',
+      configureServer(server) {
+        server.middlewares.use('/api/apps/launch', async (request, response) => {
+          if (request.method !== 'POST') {
+            response.writeHead(405, { Allow: 'POST' }).end()
+            return
+          }
+          if (!request.headers['content-type']?.startsWith('application/json')) {
+            sendJson(response, 415, { error: 'JSON required' })
+            return
+          }
+
+          try {
+            let body = ''
+            for await (const chunk of request) {
+              body += chunk.toString()
+              if (body.length > 256) {
+                sendJson(response, 413, { error: 'Request too large' })
+                return
+              }
+            }
+            const input = JSON.parse(body) as { app?: unknown }
+            if (!isLaunchableApp(input.app)) {
+              sendJson(response, 400, { error: 'Unknown app' })
+              return
+            }
+            await launchApp(input.app)
+            sendJson(response, 200, { ok: true })
+          } catch (error) {
+            if (error instanceof SyntaxError) {
+              sendJson(response, 400, { error: 'Invalid JSON' })
+            } else {
+              console.error('App launch failed:', error)
+              sendJson(response, 503, { error: 'App launch failed' })
+            }
           }
         })
       },

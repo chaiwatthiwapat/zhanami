@@ -12,6 +12,7 @@ Zhanami is a browser preview of a desktop concept. It does not install a dock, r
 | `server/systemMetrics.ts` | Reads local CPU, memory, and root filesystem metrics for the preview. |
 | `server/mpris.py` | Reads and controls the active media player over the local MPRIS D-Bus interface. |
 | `server/mpris.ts` | Runs the MPRIS helper from the Vite preview server. |
+| `server/appLauncher.ts` | Maps approved app IDs to local executables and starts them without a shell. |
 | `src/types/system.ts` | Shared shape of the system metrics response. |
 | `src/types/media.ts` | Shared media snapshot and control command types. |
 | `src/layout.css` | Geometry and glass styling migrated from `desktop_01.html`. |
@@ -24,7 +25,7 @@ Zhanami is a browser preview of a desktop concept. It does not install a dock, r
 
 The reference design is a 1600 × 900 canvas. `App.tsx` scales the entire stage to fit the current viewport while preserving its aspect ratio. The wallpaper fills the page with CSS `cover`, so it may crop at different display ratios. Component positions remain in stage coordinates to preserve the original composition.
 
-React owns all interactive state. The clock reads the local time. Workspace selection, task completion, calendar navigation, and theme selection are local preview interactions. Weather and battery values are samples. The system rings poll `/api/system` every 2.5 seconds for live CPU utilization, available memory, and usage of the root filesystem (`/`). App buttons show a preview message; they do not launch desktop applications. Search shows a preview message; it does not query files or the web.
+React owns all interactive state. The clock reads the local time. Workspace selection, task completion, calendar navigation, and theme selection are local preview interactions. Weather and battery values are samples. The system rings poll `/api/system` every 2.5 seconds for live CPU utilization, available memory, and usage of the root filesystem (`/`). Files, Chrome, zter, VS Code, Discord, and Spotify buttons call `/api/apps/launch` to open their local applications. The Photos button opens `~/Pictures` in Files through the same endpoint. The server accepts only approved app IDs and starts fixed executables without a shell. Other app buttons show a preview message. Search shows a preview message; it does not query files or the web.
 
 The music card polls `/api/media` for the active MPRIS player. The local Python helper reads the session D-Bus and prefers playing media over paused media. It returns the title, artist, optional cover art, playback state, position, duration, and available controls. Play/pause, previous, next, and seeking send commands only when the player advertises support. Unsupported controls keep their original appearance and do nothing. Shuffle, repeat, and the heart are visual only. If no player is active or the MPRIS helper is unavailable, the card shows its original sample content without simulating playback. Artwork is displayed only when the player provides an HTTP(S) URL; otherwise the wallpaper crop remains as the cover.
 

@@ -21,6 +21,8 @@ make stop      # close the dedicated window and stop the local server
 
 The preview URL is `http://127.0.0.1:5173/`. If no graphical display or supported browser is available, `make preview` starts the server and prints the URL. Set `ZHANAMI_PORT` to use another port.
 
+With a desktop session running, the Files, Chrome, zter, VS Code, Discord, and Spotify icons open the corresponding local apps. The Photos icon opens `~/Pictures` in Files. The other icons remain visual previews.
+
 ## Build
 
 ```bash

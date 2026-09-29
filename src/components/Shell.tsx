@@ -23,8 +23,26 @@ function AppIcon({ name }: { name: string }) {
   return <img className="ic app-icon" src={`/assets/icons/${name.toLowerCase()}.svg`} alt="" draggable={false} />
 }
 
-const dockApps = ['Files', 'Browser', 'Terminal', 'Code', 'Discord', 'Spotify', 'Photos', 'Apps']
-const gridApps = ['Code', 'Browser', 'Terminal', 'Files', 'Docker', 'Git', 'Music', 'Settings']
+const dockApps = [
+  { name: 'Files', icon: 'Files' },
+  { name: 'Chrome', icon: 'Browser' },
+  { name: 'zter', icon: 'Terminal' },
+  { name: 'VS Code', icon: 'Code' },
+  { name: 'Discord', icon: 'Discord' },
+  { name: 'Spotify', icon: 'Spotify' },
+  { name: 'Photos', icon: 'Photos' },
+  { name: 'Apps', icon: 'Apps' },
+]
+const gridApps = [
+  { name: 'VS Code', icon: 'Code' },
+  { name: 'Chrome', icon: 'Browser' },
+  { name: 'zter', icon: 'Terminal' },
+  { name: 'Files', icon: 'Files' },
+  { name: 'Docker', icon: 'Docker' },
+  { name: 'Git', icon: 'Git' },
+  { name: 'Music', icon: 'Music' },
+  { name: 'Settings', icon: 'Settings' },
+]
 
 export function TopBar({ now, onSearch, onNotify }: { now: Date; onSearch: () => void; onNotify: Notify }) {
   const [workspace, setWorkspace] = useState(1)
@@ -62,7 +80,7 @@ export function TopBar({ now, onSearch, onNotify }: { now: Date; onSearch: () =>
 export function Dock({ onSelect }: { onSelect: (name: string) => void }) {
   return (
     <nav id="dock" className="g dk" aria-label="Preview dock">
-      {dockApps.map((name) => <button key={name} type="button" aria-label={name} onClick={() => onSelect(name)}><AppIcon name={name} /></button>)}
+      {dockApps.map((app) => <button key={app.name} type="button" aria-label={app.name} onClick={() => onSelect(app.name)}><AppIcon name={app.icon} /></button>)}
     </nav>
   )
 }
@@ -70,9 +88,9 @@ export function Dock({ onSelect }: { onSelect: (name: string) => void }) {
 export function AppGrid({ onSelect }: { onSelect: (name: string) => void }) {
   return (
     <section id="apps" className="g" aria-label="Applications">
-      {gridApps.map((name, index) => (
-        <button key={name} type="button" style={{ left: 14 + (index % 4) * 97, top: 22 + Math.floor(index / 4) * 98 }}
-          onClick={() => onSelect(name)}><AppIcon name={name} />{name}</button>
+      {gridApps.map((app, index) => (
+        <button key={app.name} type="button" style={{ left: 14 + (index % 4) * 97, top: 22 + Math.floor(index / 4) * 98 }}
+          onClick={() => onSelect(app.name)}><AppIcon name={app.icon} />{app.name}</button>
       ))}
     </section>
   )
