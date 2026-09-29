@@ -1,22 +1,15 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { AppGrid, BottomCorners, Dock, SearchBar, TopBar } from './components/Shell'
+import { findLaunchableApp } from './appCatalog'
+import { AppGrid, BottomCorners, Dock, TopBar } from './components/Shell'
+import { SearchPalette } from './components/SearchPalette'
 import { Calendar, ClockWeather, Music, SystemStats, Todo } from './components/Widgets'
 import './layout.css'
 import './themes.css'
+import './search.css'
 
 const STAGE_WIDTH = 1600
 const STAGE_HEIGHT = 900
-const launchableApps: Record<string, string> = {
-  Files: 'files',
-  zter: 'zter',
-  Chrome: 'chrome',
-  'VS Code': 'vscode',
-  Discord: 'discord',
-  Spotify: 'spotify',
-  Photos: 'photos',
-}
-
 function useClock() {
   const [now, setNow] = useState(() => new Date())
 
@@ -46,9 +39,10 @@ function useStageScale() {
 export default function App() {
   const now = useClock()
   const scale = useStageScale()
-  const searchRef = useRef<HTMLInputElement>(null)
   const [theme, setTheme] = useState<'sakura' | 'moonlight'>('sakura')
   const [message, setMessage] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchSession, setSearchSession] = useState(0)
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -62,30 +56,44 @@ export default function App() {
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+      if (!event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return
+      const key = event.key.toLowerCase()
+      if (key === 'o' || key === 'i') {
         event.preventDefault()
-        searchRef.current?.focus()
+        if (!event.repeat) {
+          setSearchSession((current) => current + 1)
+          setSearchOpen(true)
+        }
+      } else if (key === 'q' && searchOpen) {
+        event.preventDefault()
+        setSearchOpen(false)
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [])
+  }, [searchOpen])
+
+  function openSearch() {
+    setSearchSession((current) => current + 1)
+    setSearchOpen(true)
+  }
 
   function notify(text: string) {
     setMessage(text)
   }
 
   async function selectApp(name: string) {
+    const app = findLaunchableApp(name)
     if (name === 'Settings') {
       const next = theme === 'sakura' ? 'moonlight' : 'sakura'
       setTheme(next)
       notify(`${next === 'sakura' ? 'Sakura' : 'Moonlight'} theme`)
-    } else if (launchableApps[name]) {
+    } else if (app) {
       try {
         const response = await fetch('/api/apps/launch', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ app: launchableApps[name] }),
+          body: JSON.stringify({ app: app.id }),
         })
         if (!response.ok) throw new Error(`HTTP ${response.status}`)
         notify(`Opening ${name}`)
@@ -104,17 +112,17 @@ export default function App() {
   return (
     <>
       <main id="st" style={stageStyle} aria-label="Zhanami desktop preview">
-        <TopBar now={now} onSearch={() => searchRef.current?.focus()} onNotify={notify} />
-        <Dock onSelect={selectApp} />
+        <TopBar now={now} onSearch={openSearch} onNotify={notify} />
+        <Dock onSelect={selectApp} onSearch={openSearch} />
         <ClockWeather now={now} />
         <Music onNotify={notify} />
         <AppGrid onSelect={selectApp} />
         <SystemStats />
         <Todo />
         <Calendar now={now} />
-        <SearchBar inputRef={searchRef} onNotify={notify} />
         <BottomCorners />
       </main>
+      {searchOpen && <SearchPalette key={searchSession} onClose={() => setSearchOpen(false)} onSelect={(name) => { void selectApp(name) }} />}
       <div id="toast" className={message ? 'on' : ''} role="status" aria-live="polite">{message}</div>
     </>
   )

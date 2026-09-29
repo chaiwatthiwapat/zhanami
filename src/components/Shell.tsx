@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { FormEvent, RefObject } from 'react'
+import { launchableApps } from '../appCatalog'
 
 type Notify = (message: string) => void
 type IconName = 'volume' | 'bluetooth' | 'wifi' | 'search' | 'power' | 'left' | 'right' | 'zoom'
@@ -19,20 +19,11 @@ export function ToolbarIcon({ name, className = 'tb' }: { name: IconName; classN
   return <svg className={className} viewBox="0 0 20 20" aria-hidden="true">{paths[name]}</svg>
 }
 
-function AppIcon({ name }: { name: string }) {
+export function AppIcon({ name }: { name: string }) {
   return <img className="ic app-icon" src={`/assets/icons/${name.toLowerCase()}.svg`} alt="" draggable={false} />
 }
 
-const dockApps = [
-  { name: 'Files', icon: 'Files' },
-  { name: 'Chrome', icon: 'Browser' },
-  { name: 'zter', icon: 'Terminal' },
-  { name: 'VS Code', icon: 'Code' },
-  { name: 'Discord', icon: 'Discord' },
-  { name: 'Spotify', icon: 'Spotify' },
-  { name: 'Photos', icon: 'Photos' },
-  { name: 'Apps', icon: 'Apps' },
-]
+const dockApps = [...launchableApps, { name: 'Apps', icon: 'Apps' }]
 const gridApps = [
   { name: 'VS Code', icon: 'Code' },
   { name: 'Chrome', icon: 'Browser' },
@@ -70,17 +61,20 @@ export function TopBar({ now, onSearch, onNotify }: { now: Date; onSearch: () =>
       <div className="r">
         <ToolbarIcon name="volume" /><ToolbarIcon name="bluetooth" /><ToolbarIcon name="wifi" />
         <span className="bat"><i><b /></i>85%</span>
-        <button type="button" aria-label="Focus search" onClick={onSearch}><ToolbarIcon name="search" /></button>
+        <button type="button" aria-label="Open search" onClick={onSearch}><ToolbarIcon name="search" /></button>
         <button type="button" aria-label="Power preview" onClick={() => onNotify('Power menu preview')}><ToolbarIcon name="power" /></button>
       </div>
     </header>
   )
 }
 
-export function Dock({ onSelect }: { onSelect: (name: string) => void }) {
+export function Dock({ onSelect, onSearch }: { onSelect: (name: string) => void; onSearch: () => void }) {
   return (
     <nav id="dock" className="g dk" aria-label="Preview dock">
       {dockApps.map((app) => <button key={app.name} type="button" aria-label={app.name} onClick={() => onSelect(app.name)}><AppIcon name={app.icon} /></button>)}
+      <button type="button" className="dock-search" aria-label="Search" title="Search apps" onClick={onSearch}>
+        <ToolbarIcon name="search" />
+      </button>
     </nav>
   )
 }
@@ -93,21 +87,6 @@ export function AppGrid({ onSelect }: { onSelect: (name: string) => void }) {
           onClick={() => onSelect(app.name)}><AppIcon name={app.icon} />{app.name}</button>
       ))}
     </section>
-  )
-}
-
-export function SearchBar({ inputRef, onNotify }: { inputRef: RefObject<HTMLInputElement | null>; onNotify: Notify }) {
-  function search(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const value = inputRef.current?.value.trim()
-    if (value) onNotify(`Search preview: ${value}`)
-  }
-
-  return (
-    <form id="search" className="g dk" onSubmit={search} role="search">
-      <ToolbarIcon name="search" className="tb search-icon" />
-      <input ref={inputRef} aria-label="Search preview" placeholder="Search apps, files, web..." autoComplete="off" />
-    </form>
   )
 }
 
