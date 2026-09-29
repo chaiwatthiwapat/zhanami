@@ -18,10 +18,20 @@
   --dim: rgba(236, 236, 255, .78);
 }
 
-#tl li { cursor: default; }
-#tl .todo-row { width: 100%; height: 100%; display: flex; align-items: center; gap: 14px; text-align: left; font-size: 15px; }
-#tl li.done .todo-row span { color: #ffb3dc; }
+#tl { bottom: 12px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--pk) transparent; }
+#tl li { cursor: default; gap: 0; }
+#tl .todo-row { flex: 1; min-width: 0; height: 100%; display: flex; align-items: center; gap: 14px; text-align: left; font-size: 15px; }
+#tl .todo-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+#tl li.done .todo-text { color: #ffb3dc; }
 #tl .todo-row:focus-visible { outline-offset: -2px; }
+#tl .todo-action { flex: none; width: 24px; height: 28px; color: var(--dim); opacity: .9; font-size: 18px; line-height: 1; }
+#tl .todo-action:hover, #tl .todo-action:focus-visible { color: #fff; opacity: 1; }
+#tl .todo-editor { display: flex; align-items: center; gap: 5px; width: 100%; }
+#tl .todo-editor input { min-width: 0; flex: 1; height: 30px; padding: 0 6px; color: #fff; background: rgba(40, 25, 40, .26); border: 1px solid var(--ln); border-radius: 7px; font: inherit; font-size: 14px; }
+#tl .todo-editor input::placeholder { color: var(--dim); }
+#tl .todo-editor button { flex: none; width: 22px; height: 28px; font-size: 18px; }
+#tl .todo-empty { height: auto; padding: 14px 0; color: var(--dim); font-size: 13px; }
+#todo .todo-save-error { position: absolute; left: 22px; right: 22px; bottom: 3px; color: #ffe0e8; font-size: 11px; }
 .pb { appearance: none; width: auto; }
 .app-icon { object-fit: contain; }
 #music .hr { width: 22px; height: 22px; fill: var(--pk); }

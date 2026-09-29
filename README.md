@@ -23,6 +23,8 @@ The preview URL is `http://127.0.0.1:5173/`. If no graphical display or supporte
 
 With a desktop session running, the Files, Chrome, zter, VS Code, Discord, and Spotify icons open the corresponding local apps. The Photos icon opens `~/Pictures` in Files. The other icons remain visual previews.
 
+The Today card starts empty. Use `+` to add a task, the circle to mark it complete, and the pencil or `×` beside a task to edit or delete it. Enter saves an edit; Escape cancels it. Tasks are stored in the preview browser's local storage and remain there until deleted. They are specific to that browser profile and are not synced or backed up.
+
 ## Build
 
 ```bash

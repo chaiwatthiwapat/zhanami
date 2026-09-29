@@ -196,35 +196,93 @@ export function SystemStats() {
   )
 }
 
-type Task = { id: number; text: string; done: boolean }
-const initialTasks: Task[] = [
-  { id: 1, text: 'Finish RAG chunking', done: true },
-  { id: 2, text: 'Update wfchat UI', done: true },
-  { id: 3, text: 'Read Rust book', done: false },
-  { id: 4, text: 'Game prototype (web)', done: false },
-  { id: 5, text: 'Plan tomorrow', done: false },
-]
+type Task = { id: string; text: string; done: boolean }
+type TaskEditor = { id: string | null; text: string }
+const TASKS_STORAGE_KEY = 'zhanami.tasks.v1'
+
+function readTasks(): Task[] {
+  try {
+    const saved = window.localStorage.getItem(TASKS_STORAGE_KEY)
+    if (!saved) return []
+    const value: unknown = JSON.parse(saved)
+    if (!Array.isArray(value)) return []
+    return value.filter((task): task is Task =>
+      typeof task === 'object' && task !== null
+      && typeof task.id === 'string' && typeof task.text === 'string'
+      && typeof task.done === 'boolean')
+  } catch {
+    return []
+  }
+}
 
 export function Todo() {
-  const [tasks, setTasks] = useState(initialTasks)
+  const [tasks, setTasks] = useState<Task[]>(readTasks)
+  const tasksRef = useRef(tasks)
+  const [editor, setEditor] = useState<TaskEditor | null>(null)
+  const [saveFailed, setSaveFailed] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const editingId = editor?.id
 
-  function addTask() {
-    const text = window.prompt('New task')?.trim()
-    if (text) setTasks((current) => [...current, { id: Date.now(), text, done: false }])
+  function updateTasks(updater: (current: Task[]) => Task[]) {
+    const next = updater(tasksRef.current)
+    tasksRef.current = next
+    setTasks(next)
+    try {
+      window.localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(next))
+      setSaveFailed(false)
+    } catch {
+      setSaveFailed(true)
+    }
+  }
+
+  useEffect(() => {
+    if (editingId !== undefined) inputRef.current?.focus()
+  }, [editingId])
+
+  function saveTask() {
+    if (!editor) return
+    const text = editor.text.trim()
+    if (!text) { inputRef.current?.focus(); return }
+    if (editor.id === null) {
+      updateTasks((current) => [{ id: crypto.randomUUID(), text, done: false }, ...current])
+    } else {
+      updateTasks((current) => current.map((task) => task.id === editor.id ? { ...task, text } : task))
+    }
+    setEditor(null)
+  }
+
+  function taskForm() {
+    return <form className="todo-editor" onSubmit={(event) => { event.preventDefault(); saveTask() }}>
+      <input ref={inputRef} value={editor?.text ?? ''} maxLength={120} aria-label={editor?.id === null ? 'New task' : 'Edit task'}
+        placeholder="Write a task..." onChange={(event) => setEditor((current) => current && { ...current, text: event.target.value })}
+        onKeyDown={(event) => { if (event.key === 'Escape') setEditor(null) }} />
+      <button type="submit" aria-label="Save task" title="Save task">✓</button>
+      <button type="button" aria-label="Cancel editing" title="Cancel" onClick={() => setEditor(null)}>×</button>
+    </form>
   }
 
   return (
-    <section id="todo" className="g" aria-label="Preview tasks">
+    <section id="todo" className="g" aria-label="Tasks">
       <h2>Today</h2><span className="cnt">{tasks.filter((task) => task.done).length}/{tasks.length}</span>
-      <button className="add" type="button" aria-label="Add task" onClick={addTask}>+</button>
-      <ul id="tl">{tasks.map((task) => (
-        <li key={task.id} className={task.done ? 'done' : ''}>
-          <button className="todo-row" type="button" aria-label={`${task.done ? 'Mark incomplete' : 'Mark complete'}: ${task.text}`}
-            onClick={() => setTasks((current) => current.map((entry) => entry.id === task.id ? { ...entry, done: !entry.done } : entry))}>
-            <div className="ck" aria-hidden="true">{task.done ? '✓' : ''}</div><span>{task.text}</span>
-          </button>
-        </li>
-      ))}</ul>
+      <button className="add" type="button" aria-label={editor?.id === null ? 'Cancel new task' : 'Add task'}
+        onClick={() => setEditor((current) => current?.id === null ? null : { id: null, text: '' })}>{editor?.id === null ? '×' : '+'}</button>
+      <ul id="tl">
+        {editor?.id === null && <li className="editing" key="new">{taskForm()}</li>}
+        {tasks.map((task) => <li key={task.id} className={task.done ? 'done' : ''}>
+          {editor?.id === task.id ? taskForm() : <>
+            <button className="todo-row" type="button" aria-label={`${task.done ? 'Mark incomplete' : 'Mark complete'}: ${task.text}`}
+              onClick={() => updateTasks((current) => current.map((entry) => entry.id === task.id ? { ...entry, done: !entry.done } : entry))}>
+              <span className="ck" aria-hidden="true">{task.done ? '✓' : ''}</span><span className="todo-text" title={task.text}>{task.text}</span>
+            </button>
+            <button className="todo-action" type="button" aria-label={`Edit: ${task.text}`} title="Edit task"
+              onClick={() => setEditor({ id: task.id, text: task.text })}>✎</button>
+            <button className="todo-action" type="button" aria-label={`Delete: ${task.text}`} title="Delete task"
+              onClick={() => updateTasks((current) => current.filter((entry) => entry.id !== task.id))}>×</button>
+          </>}
+        </li>)}
+        {tasks.length === 0 && editor === null && <li className="todo-empty">No tasks yet. Press + to add one.</li>}
+      </ul>
+      {saveFailed && <span className="todo-save-error" role="status">Tasks could not be saved</span>}
     </section>
   )
 }
