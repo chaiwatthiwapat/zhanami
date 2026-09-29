@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { findLaunchableApp } from './appCatalog'
-import { AppGrid, BottomCorners, Dock, TopBar } from './components/Shell'
+import { AppGrid, Dock, TopBar } from './components/Shell'
 import { SearchPalette } from './components/SearchPalette'
 import { Calendar, ClockWeather, Music, SystemStats, Todo } from './components/Widgets'
 import './layout.css'
@@ -120,7 +120,6 @@ export default function App() {
         <SystemStats />
         <Todo />
         <Calendar now={now} />
-        <BottomCorners />
       </main>
       {searchOpen && <SearchPalette key={searchSession} onClose={() => setSearchOpen(false)} onSelect={(name) => { void selectApp(name) }} />}
       <div id="toast" className={message ? 'on' : ''} role="status" aria-live="polite">{message}</div>

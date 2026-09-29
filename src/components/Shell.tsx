@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { launchableApps } from '../appCatalog'
 
 type Notify = (message: string) => void
-type IconName = 'volume' | 'bluetooth' | 'wifi' | 'search' | 'power' | 'left' | 'right' | 'zoom'
+type IconName = 'volume' | 'bluetooth' | 'wifi' | 'search' | 'power' | 'left' | 'right'
 
 export function ToolbarIcon({ name, className = 'tb' }: { name: IconName; className?: string }) {
   const paths = {
@@ -13,7 +13,6 @@ export function ToolbarIcon({ name, className = 'tb' }: { name: IconName; classN
     power: <path d="M10 3v7M5.5 6a6 6 0 109 0" />,
     left: <path d="M12 4l-6 6 6 6" />,
     right: <path d="M8 4l6 6-6 6" />,
-    zoom: <><circle cx="9" cy="9" r="5.5" /><path d="M13 13l4 4M9 6.5v5M6.5 9h5" /></>,
   }
 
   return <svg className={className} viewBox="0 0 20 20" aria-hidden="true">{paths[name]}</svg>
@@ -87,14 +86,5 @@ export function AppGrid({ onSelect }: { onSelect: (name: string) => void }) {
           onClick={() => onSelect(app.name)}><AppIcon name={app.icon} />{app.name}</button>
       ))}
     </section>
-  )
-}
-
-export function BottomCorners() {
-  return (
-    <>
-      <div className="g cn" style={{ left: 11, width: 86 }} aria-hidden="true"><ToolbarIcon name="left" /><ToolbarIcon name="right" /></div>
-      <div className="g cn" style={{ left: 1509, width: 71 }} aria-hidden="true"><ToolbarIcon name="zoom" /><ToolbarIcon name="right" /></div>
-    </>
   )
 }
